@@ -1,0 +1,92 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Adicionando mapa de contexto
+
+Em algumas situações um mapa de fundo é interessante. Há várias maneiras de fazer essa inclusão. Pelo `OpenStreetMap`, a ideia é fazer a definição da área a ser representada, fazer o download e plotar o mapa de fundo. Depois acrescentar o mapa em desenvolvimento. 
+
+```{r}
+library(OpenStreetMap)
+# define upper left, lower right corners 
+georgia.sub <- georgia[index,]
+ul <- as.vector(cbind(bbox(georgia.sub)[2,2], 
+    bbox(georgia.sub)[1,1]))
+lr <- as.vector(cbind(bbox(georgia.sub)[2,1], 
+    bbox(georgia.sub)[1,2]))
+# download the map tile
+MyMap <- openmap(ul,lr)
+# now plot the layer and the backdrop
+par(mar = c(0,0,0,0))
+plot(MyMap, removeMargin=FALSE)
+plot(spTransform(georgia.sub, osm()), add = TRUE, lwd = 2)
+```
+
+### Como salvar meu mapa
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+
+data(newhaven)
+
+# proj4string(roads) <- proj4string(blocks) # 
+# plot spatial data
+# png(file = 'map.png')
+#p df(file = 'map.pdf') # salva o mapa como pdf.
+
+tm_shape(blocks) +
+    tm_borders() +
+tm_shape(roads) +
+  tm_lines(col = "red") +
+# embellish the map
+tm_scale_bar(width = 0.22) +
+tm_compass(position = c(0.8, 0.07)) +
+tm_layout(frame = F, title = "New Haven, CT", 
+            title.size = 1.5, 
+            title.position = c(0.55, "top"), 
+            legend.outside = T) 
+
+
+
+
+library(cartography)
+geo <- georgia_sf[1:10,]
+pencil <- getPencilLayer(World) 
+
+png(file = 'mapa2.png')
+
+plot(st_geometry(pencil), col = 1:8)
+
+png(file = 'mapa3.png')
+
+choroLayer(x = pencil, var = "pop_est", 
+           method = "quantile", nclass = 8,
+           lwd = .7, 
+           legend.values.rnd = 2, legend.pos = "topright",
+           legend.title.txt = "População estimada") 
+           
+
+class(World)
+
+#dev.off() # desconectar o arquivo gerado do ambiente de trabalho. 
+```
+
+### Mapas interativos usando `tmap`
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# Mapa interativo
+current.mode <- tmap_mode("view")
+# qtm(metro, bbox = "China")
+
+# Mostra o ambiente interativo sem atributos
+qtm()
+
+# search query for OpenStreetMap nominatim
+qtm("Amsterdam")
+
+tmap_mode(current.mode) # restore mode
+```

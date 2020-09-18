@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Representação de dados espaciais no R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Renata Oliveira" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Representação de dados espaciais no R
+## Encontro síncrono 5
+### Renata Oliveira
+### 18/09/2020
+
+---
+
+
+
+
+
+
+class: center, middle
+
+# Representação de dados espaciais no R
+
+---
+
+## Packages para manipulação de dados espaciais no R
+
+Package | utilização
+--------|-----------
+raster | informações espaciais matriciais
+OpenStreetMap | dados o OSM
+RgoogleMaps | dados do Google Maps
+grid | dividir a representação em mais de um mapa
+rgdal | ler e escrever dados espaciais
+tidyverse | organização de dados
+GISTools | ler e escrever dados espaciais
+sf | manipulação de dados espaciais
+tmap | mapas temáticos
+
+---
+
+## Introdução aos packages `sp` e `sf`
+
+O package `sf` é uma evolução do package `sp`. Na maioria dos casos, é interessante utilizar o `sf`, mas para algumas implementações, como por exemplo o uso de funções no `spdep` para técnicas de análise espacial, faz-se necessária a utilização do `sp`. 
+
+
+### Dados espaciais `sp`
+Por meio do package `sp` é possível definir classes (ou objetos `sp`) para manipulação de dados vetoriais pontos, linhas e polígonos. 
+
+Formatos de dados espacais no R
+
+Sem atributos | Com atributos | Equivalente ESRI
+--------------|---------------|-----------------
+SpatialPoints | SpatialPointsDataFrame | Point shapefiles
+SpatiaLines | SpatialLinesDataFrame | Line shapefiles
+SpatialPolygons | SpatialPolygonsDataFrame | Polygon shapefiles
+
+---
+
+### Dados espaciais GISTools
+
+O package `GISTools` vem com diferentes bancos de dados que podem ajudar no entendimento das funções. Utilizaremos dois conjuntos dados para explorar as funcionalidades deste package, a saber:   
+
+(i) dados representados em linhas e polígonos referentes aos municípios na Georgia, considerando New Haven e Connecticut nos EUA. Os dados de New Haven contemplam dados de estatísticas de crimes, rodovias, informações demográficas, ferrovias e locais. 
+
+(ii) O dado da Georgia inclui os limites municipais com alguns atributos relacionados aos dados de 1990 (população total, população rural, que tem curso superior, estrangeira, idosos, linha da pobreza, negros, renda média).
+
+---
+### Dados espaciais GISTools
+Para carregar os dados, utilize a função `data()`. 
+
+
+```r
+library(GISTools)
+data(newhaven)
+ls() # inspecionar os dados
+```
+
+```
+## [1] "blocks"    "breach"    "burgres.f" "burgres.n" "famdisp"   "places"   
+## [7] "roads"     "tracts"
+```
+
+Verifique as classes dos objetos:
+
+
+```r
+class(breach)
+```
+
+```
+## [1] "SpatialPoints"
+## attr(,"package")
+## [1] "sp"
+```
+
+```r
+class(blocks)
+```
+
+```
+## [1] "SpatialPolygonsDataFrame"
+## attr(,"package")
+## [1] "sp"
+```
+
+---
+### Dados espaciais GISTools
+
+Os dados associados ao objeto `blocks` podem ser visualizados por meio da função:
+
+
+```r
+head(data.frame(blocks))
+```
+
+```
+##   NEWH075H_ NEWH075H_I HSE_UNITS OCCUPIED VACANT  P_VACANT P_OWNEROCC
+## 0         2         69       763      725     38  4.980341   0.393185
+## 1         3         72       510      480     30  5.882353  20.392157
+## 2         4         64       389      362     27  6.940874  57.840617
+## 3         5         68       429      397     32  7.459207  19.813520
+## 4         6         67       443      385     58 13.092551  80.361174
+## 5         7        133       588      548     40  6.802721  52.551020
+##   P_RENTROCC NEWH075P_ NEWH075P_I POP1990  P_MALES P_FEMALES   P_WHITE
+## 0  94.626474         2        380    2396 40.02504  59.97496  7.095159
+## 1  73.725490         3        385    3071 39.07522  60.92478 87.105177
+## 2  35.218509         4        394     996 47.38956  52.61044 32.931727
+## 3  72.727273         5        399    1336 42.66467  57.33533 11.452096
+## 4   6.546275         6        404     915 46.22951  53.77049 73.442623
+## 5  40.646259         7        406    1318 50.91047  49.08953 87.784522
+##     P_BLACK P_AMERI_ES P_ASIAN_PI  P_OTHER  P_UNDER5    P_5_13  P_14_17
+## 0 87.020033   0.584307   0.041736 5.258765 12.813022 24.707846 7.888147
+## 1 10.452621   0.195376   0.521003 1.725822  1.921198  2.474764 0.814067
+## 2 66.265060   0.100402   0.200803 0.502008 10.441767 13.554217 5.722892
+## 3 85.553892   0.523952   0.523952 1.946108 10.853293 17.739521 7.709581
+## 4 24.371585   0.327869   1.420765 0.437158  6.229508  8.633880 2.950820
+## 5  7.435508   0.758725   0.834598 3.186646  8.725341  8.194234 3.641882
+##     P_18_24   P_25_34   P_35_44  P_45_54  P_55_64   P_65_74   P_75_UP
+## 0 12.479132 16.026711  8.555927 5.759599 4.924875  4.048414  2.796327
+## 1 71.149463  7.359166  4.037773 1.595571 1.758385  3.712146  5.177467
+## 2  8.835341 17.670683 17.871486 8.734940 5.923695  7.931727  3.313253
+## 3 12.425150 18.113772 10.853293 9.056886 6.287425  4.266467  2.694611
+## 4  7.103825 17.267760 16.830601 8.415301 7.431694 14.426230 10.710383
+## 5 10.091047 29.286798 12.898331 7.814871 7.814871  6.904401  4.628225
+```
+
+---
+### Dados espaciais GISTools
+
+O data frame de um objeto espacial `sp` também pode ser acessado por meio de `@data`:
+
+
+```r
+head(blocks@data)
+```
+
+```
+##   NEWH075H_ NEWH075H_I HSE_UNITS OCCUPIED VACANT  P_VACANT P_OWNEROCC
+## 0         2         69       763      725     38  4.980341   0.393185
+## 1         3         72       510      480     30  5.882353  20.392157
+## 2         4         64       389      362     27  6.940874  57.840617
+## 3         5         68       429      397     32  7.459207  19.813520
+## 4         6         67       443      385     58 13.092551  80.361174
+## 5         7        133       588      548     40  6.802721  52.551020
+##   P_RENTROCC NEWH075P_ NEWH075P_I POP1990  P_MALES P_FEMALES   P_WHITE
+## 0  94.626474         2        380    2396 40.02504  59.97496  7.095159
+## 1  73.725490         3        385    3071 39.07522  60.92478 87.105177
+## 2  35.218509         4        394     996 47.38956  52.61044 32.931727
+## 3  72.727273         5        399    1336 42.66467  57.33533 11.452096
+## 4   6.546275         6        404     915 46.22951  53.77049 73.442623
+## 5  40.646259         7        406    1318 50.91047  49.08953 87.784522
+##     P_BLACK P_AMERI_ES P_ASIAN_PI  P_OTHER  P_UNDER5    P_5_13  P_14_17
+## 0 87.020033   0.584307   0.041736 5.258765 12.813022 24.707846 7.888147
+## 1 10.452621   0.195376   0.521003 1.725822  1.921198  2.474764 0.814067
+## 2 66.265060   0.100402   0.200803 0.502008 10.441767 13.554217 5.722892
+## 3 85.553892   0.523952   0.523952 1.946108 10.853293 17.739521 7.709581
+## 4 24.371585   0.327869   1.420765 0.437158  6.229508  8.633880 2.950820
+## 5  7.435508   0.758725   0.834598 3.186646  8.725341  8.194234 3.641882
+##     P_18_24   P_25_34   P_35_44  P_45_54  P_55_64   P_65_74   P_75_UP
+## 0 12.479132 16.026711  8.555927 5.759599 4.924875  4.048414  2.796327
+## 1 71.149463  7.359166  4.037773 1.595571 1.758385  3.712146  5.177467
+## 2  8.835341 17.670683 17.871486 8.734940 5.923695  7.931727  3.313253
+## 3 12.425150 18.113772 10.853293 9.056886 6.287425  4.266467  2.694611
+## 4  7.103825 17.267760 16.830601 8.415301 7.431694 14.426230 10.710383
+## 5 10.091047 29.286798 12.898331 7.814871 7.814871  6.904401  4.628225
+```
+
+---
+### Dados espaciais GISTools
+
+Os dados das unidades censitárias de New Haven podem ser visualizados por meio de:
+
+
+```r
+plot(blocks)
+```
+
+![](index_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+
+---
+
+### Dados espaciais `sf`
+
+Uma nova classe de objetos espaciais no R foi definida por meio do package denominado `sf`. O objetivo de desenvolvimento deste package é padronizar o formato dos dados espaciais. 
+
+&lt;img src="./sf.png" width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+### Dados espaciais `sf`
+
+Tipo |	Descrição
+-----|-----------
+POINT	|zero-dimensional geometry containing a single point
+LINESTRING	|sequence of points connected by straight, non-self intersecting line pieces; one-dimensional geometry
+POLYGON	|geometry with a positive area (two-dimensional); sequence of points form a closed, non-self intersecting ring; the first ring denotes the exterior ring, zero or more subsequent rings denote holes in this exterior ring
+MULTIPOINT|	set of points; a MULTIPOINT is simple if no two Points in the MULTIPOINT are equal
+MULTILINESTRING	|set of linestrings
+MULTIPOLYGON	|set of polygons
+GEOMETRYCOLLECTION	|set of geometries of any type except GEOMETRYCOLLECTION
+
+---
+### Lendo e escrevendo dados espaciais no R
+
+As funções do `rgdal` para ler e escrever dados espaciais são, respectivamente: `readOGR()` e `writeOGR()`. O objeto `georgia` em `sp` pode ser convertido em _shapefile_ como a seguir:
+
+
+```r
+library(rgdal)
+writeOGR(obj=georgia, dsn="./shapefiles", layer="georgia", driver="ESRI Shapefile", overwrite_layer=TRUE)
+readOGR(dsn="./shapefiles/georgia.shp")
+```
+
+---
+### Lendo e escrevendo dados espaciais no R
+
+O package `sf` também tem funções que permitem ler e escrever dados espaciais. As funções para isso são `st_read()` e `st_write()`.
+
+
+```r
+setwd("./shapefiles/")
+g2 &lt;- st_read("georgia.shp")
+```
+
+O diretório deve ser especificado para que os dados espaciais sejam varridos de forma efetiva pelas funções. Para escrever utilizando a função `st_write()` são necessários dois parâmetros: o objeto e o nome do arquivo. 
+
+
+```r
+st_write(g2, "georgia.shp", delete_layer = TRUE)
+```
+
+---
+### Uma introdução ao package `tmap`
+
+O package `tmap` permite o uso de novas funcionalidades para gerar mapas e funções para extração de dados do Google Maps e do OpenStreetMap. O foco do package `tmap` é a construção de mapas temáticos. Podem ser considerados dados `sp` e `sf`. A gramática para construção dos mapas é similar àquela do package `ggplot`. Assim, a representação de dados espaciais por meio do `tmap` conta com a manipulação de cada elemento do mapa separadamente em diferentes camadas. 
+
+
+```r
+library(tmap)
+data(World)
+```
+
+---
+### Uma introdução ao package `tmap`
+
+```r
+tm_shape(World) +
+    tm_polygons("HPI", n = 9, palette = "div",
+        title = "Happy Planet Index", id = "name") +
+tm_style("gray") +
+tm_format("World")
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-11-1.png" style="display: block; margin: auto;" /&gt;
+--- 
+
+### Sistemas de coordenadas
+
+Verificar qual o sistema de referência em uso de dados espaciais vetoriais
+
+
+```r
+library(sf)
+st_crs(World)
+```
+
+```
+## Coordinate Reference System:
+##   User input: +proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs 
+##   wkt:
+## PROJCRS["unknown",
+##     BASEGEOGCRS["unknown",
+##         DATUM["World Geodetic System 1984",
+##             ELLIPSOID["WGS 84",6378137,298.257223563,
+##                 LENGTHUNIT["metre",1]],
+##             ID["EPSG",6326]],
+##         PRIMEM["Greenwich",0,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8901]]],
+##     CONVERSION["unknown",
+##         METHOD["Eckert IV"],
+##         PARAMETER["Longitude of natural origin",0,
+##             ANGLEUNIT["degree",0.0174532925199433],
+##             ID["EPSG",8802]],
+##         PARAMETER["False easting",0,
+##             LENGTHUNIT["metre",1],
+##             ID["EPSG",8806]],
+##         PARAMETER["False northing",0,
+##             LENGTHUNIT["metre",1],
+##             ID["EPSG",8807]]],
+##     CS[Cartesian,2],
+##         AXIS["(E)",east,
+##             ORDER[1],
+##             LENGTHUNIT["metre",1,
+##                 ID["EPSG",9001]]],
+##         AXIS["(N)",north,
+##             ORDER[2],
+##             LENGTHUNIT["metre",1,
+##                 ID["EPSG",9001]]]]
+```
+---
+### Sintaxe `Proj4`
+
+Parâmetro | Significado
+----------|-------------
++a       |  Semimajor radius of the ellipsoid axis
++b       |  Semiminor radius of the ellipsoid axis
++datum    | Datum name 
++ellps    | Ellipsoid name 
++lat_0    | Latitude of origin
++lat_1    | Latitude of first standard parallel
++lat_2    | Latitude of second standard parallel
++lat_ts   | Latitude of true scale
++lon_0    | Central meridian
++over     | Allow longitude output outside -180 to 180 range, disables wrapping 
++proj     | Projection name 
+---
+
+### Sintaxe `Proj4`
+
+Parâmetro | Significado
+----------|-------------
++south    | Denotes southern hemisphere UTM zone
++units|     meters, US survey feet, etc.
++x_0   |    False easting
++y_0    |   False northing
++zone    |  UTM zone
+
+---
+### Como salvar meu mapa
+
+pdf(file = 'map.pdf')
+
+---
+## Outras coisinhas fofas
+
+&lt;img src="./img/mapa1.png" width="60%" style="display: block; margin: auto;" /&gt;
+---
+## Outras coisinhas fofas
+
+&lt;img src="./img/mapa2.png" width="60%" style="display: block; margin: auto;" /&gt;
+---
+## Outras coisinhas fofas
+
+&lt;img src="./img/mapa4.png" width="60%" style="display: block; margin: auto;" /&gt;
+---
+
+class: inverse, center, middle
+
+# Dúvidas?
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
